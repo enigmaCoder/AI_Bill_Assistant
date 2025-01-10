@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:pdfx/pdfx.dart';
 
 void main() {
@@ -94,12 +94,14 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
       isLoading = true;
     });
 
+    final dio = Dio();
+
     try {
-      final apiKey = "AIzaSyCgsPmiy-AMhwfNzc085k7GQcuqIR8dzTE"; // Replace with your Google API key
+      final apiKey = "AIzaSyCgsPmiy-AMhwfNzc085k7GQcuqIR8dzTE"; // Replace with a secure method to retrieve the API key
       final base64Data = base64Encode(selectedFile!.bytes!);
 
-      final url = Uri.parse(
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey");
+      final url =
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey";
 
       final requestBody = {
         "contents": [
@@ -120,18 +122,20 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
         ]
       };
 
-      final response = await http.post(
+      final response = await dio.post(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+        ),
+        data: requestBody,
       );
 
       if (response.statusCode == 200) {
         setState(() {
-          extractedData = jsonDecode(response.body);
+          extractedData = response.data; // `response.data` is already parsed JSON
         });
       } else {
-        throw Exception('Failed to analyze invoice: ${response.body}');
+        throw Exception('Failed to analyze invoice: ${response.data}');
       }
     } catch (e) {
       showError('An error occurred: $e');

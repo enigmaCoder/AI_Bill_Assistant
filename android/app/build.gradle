@@ -5,8 +5,24 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+ext {
+    majorVersion = 1
+    minorVersion = 0
+    buildVersion = 1
+}
+
+// Increment build version on every release or commit
+def calculateVersionCode() {
+    return majorVersion * 10000 + minorVersion * 100 + buildVersion
+}
+
+// Format version name as "maj.min.build"
+def calculateVersionName() {
+    return "${majorVersion}.${minorVersion}.${buildVersion}"
+}
+
 android {
-    namespace = "com.example.ai_bill_assistant"
+    namespace = "com.techmistri.ai_bill_assistant"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,13 +37,13 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.ai_bill_assistant"
+        applicationId = "com.techmistri.ai_bill_assistant"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode calculateVersionCode()
+        versionName calculateVersionName()
     }
 
     buildTypes {

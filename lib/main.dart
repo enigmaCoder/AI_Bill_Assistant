@@ -72,7 +72,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
 
       // Open the PDF document
       final pdfDocument = await PdfDocument.openData(file.bytes!);
-      final page = await pdfDocument.getPage(1);
+      final page = await pdfDocument.getPage(pdfDocument.pagesCount);
       final pageImage = await page.render(width: page.width, height: page.height);
       await page.close();
       Uint8List jpgBytes = pageImage!.bytes;
@@ -109,7 +109,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                "You are an expert invoice analyst; extract and summarize all relevant details from the invoice, and present this in a structured JSON format."
+                "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productDetails (containing purchaseDate, price, insuranceDate, expiryDate, description, sellerInformation, productType, remainingDetails), and check popular online store listings for the productName to provide the productLink."
               },
               {
                 "inline_data": {

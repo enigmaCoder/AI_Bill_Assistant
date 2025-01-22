@@ -28,7 +28,8 @@ class InvoiceAnalyzer extends StatefulWidget {
 }
 
 class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
-  PlatformFile? selectedFile;
+  String? selectedFileName;
+  Uint8List? selectedFileBytes;
   Map<String, dynamic>? extractedData;
   bool isLoading = false;
 
@@ -44,18 +45,16 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
           final imageBytes = await convertPdfToImage(file);
           if (imageBytes != null) {
             setState(() {
-              selectedFile = PlatformFile(
-                name: file.name,
-                bytes: imageBytes!,
-                size: imageBytes.length,
-              );
+              selectedFileBytes = imageBytes.asUnmodifiableView();
+              selectedFileName = file.name;
             });
           } else {
             showError('Failed to convert PDF to image.');
           }
         } else {
           setState(() {
-            selectedFile = file;
+            selectedFileBytes = file.bytes;
+            selectedFileName = file.name;
           });
         }
       }
@@ -76,7 +75,6 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
       final pageImage = await page.render(width: page.width, height: page.height);
       await page.close();
       Uint8List jpgBytes = pageImage!.bytes;
-      final base64Image = base64Encode(jpgBytes);
       return jpgBytes;
     } catch (e) {
       print('Error converting PDF to image: $e');
@@ -85,7 +83,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
   }
 
   Future<void> analyzeInvoice() async {
-    if (selectedFile == null) {
+    if (selectedFileBytes == null) {
       showError('No file selected.');
       return;
     }
@@ -98,7 +96,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
 
     try {
       final apiKey = "AIzaSyCgsPmiy-AMhwfNzc085k7GQcuqIR8dzTE"; // Replace with a secure method to retrieve the API key
-      final base64Data = base64Encode(selectedFile!.bytes!);
+      final base64Data = base64Encode(selectedFileBytes!);
 
       final url =
           "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey";
@@ -109,7 +107,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productDetails (containing purchaseDate, price, insuranceDate, expiryDate, description, sellerInformation, productType, remainingDetails), and check popular online store listings for the productName to provide the productLink."
+                "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productDetails (containing purchaseDate, price, insuranceDate, expiryDate, description, sellerInformation, productType, remainingDetails)"
               },
               {
                 "inline_data": {
@@ -131,9 +129,21 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
       );
 
       if (response.statusCode == 200) {
-        setState(() {
-          extractedData = response.data; // `response.data` is already parsed JSON
-        });
+        final extractedText = response.data['candidates']?[0]['content']?['parts']?[0]['text'];
+        if (extractedText != null) {
+          final jsonStart = extractedText.indexOf('{');
+          final jsonEnd = extractedText.lastIndexOf('}');
+          if (jsonStart != -1 && jsonEnd != -1) {
+            final jsonString = extractedText.substring(jsonStart, jsonEnd + 1);
+            setState(() {
+              extractedData = jsonDecode(jsonString);
+            });
+          } else {
+            throw Exception('No valid JSON found in response text.');
+          }
+        } else {
+          throw Exception('No valid JSON found in response.');
+        }
       } else {
         throw Exception('Failed to analyze invoice: ${response.data}');
       }
@@ -152,18 +162,52 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     );
   }
 
-  Widget displayExtractedData() {
-    if (extractedData == null) return Text('No data available.');
+  String formatKey(String key) {
+    return key.replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (match) {
+      return '${match.group(1)} ${match.group(2)}';
+    }).toUpperCase().replaceAll('_', ' ');
+  }
 
-    return ListView(
-      shrinkWrap: true,
-      children: extractedData!.entries.map((entry) {
-        return ListTile(
-          title: Text(entry.key),
-          subtitle: Text(entry.value.toString()),
-        );
-      }).toList(),
-    );
+  Widget buildNestedList(dynamic data, {int level = 0}) {
+    if (data is Map) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: data.entries.map((entry) {
+          return Padding(
+            padding: EdgeInsets.only(left: level * 16.0),
+            child: ExpansionTile(
+              title: Text(
+                formatKey(entry.key),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16.0 - level * 1.0,
+                  color: Colors.blueAccent.shade700,
+                ),
+              ),
+              children: [
+                buildNestedList(entry.value, level: level + 1),
+              ],
+            ),
+          );
+        }).toList(),
+      );
+    } else if (data is List) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: data.map((item) => buildNestedList(item, level: level + 1)).toList(),
+      );
+    } else {
+      return Padding(
+        padding: EdgeInsets.only(left: level * 16.0, top: 4.0, bottom: 4.0),
+        child: Text(
+          data?.toString() ?? 'null',
+          style: TextStyle(
+            fontSize: 14.0 - level * 0.5,
+            color: Colors.grey.shade800,
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -182,7 +226,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
               child: Text('Upload Invoice'),
             ),
             SizedBox(height: 10),
-            if (selectedFile != null) Text('Selected File: ${selectedFile!.name}'),
+            if (selectedFileBytes != null) Text('Selected File: $selectedFileName'),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: isLoading ? null : analyzeInvoice,
@@ -193,7 +237,9 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             SizedBox(height: 20),
             Expanded(
               child: extractedData != null
-                  ? displayExtractedData()
+                  ? SingleChildScrollView(
+                child: buildNestedList(extractedData!),
+              )
                   : Center(
                 child: Text('Upload an invoice or bill to analyze.'),
               ),

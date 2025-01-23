@@ -72,7 +72,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
       // Open the PDF document
       final pdfDocument = await PdfDocument.openData(file.bytes!);
       final page = await pdfDocument.getPage(pdfDocument.pagesCount);
-      final pageImage = await page.render(width: page.width, height: page.height);
+      final pageImage = await page.render(width: page.width*5, height: page.height*5,format: PdfPageImageFormat.png,backgroundColor: '#FFFFFF',quality: 100);
       await page.close();
       Uint8List jpgBytes = pageImage!.bytes;
       return jpgBytes;

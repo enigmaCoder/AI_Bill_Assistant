@@ -76,7 +76,12 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
       // Open the PDF document
       final pdfDocument = await PdfDocument.openData(file.bytes!);
       final page = await pdfDocument.getPage(pdfDocument.pagesCount);
-      final pageImage = await page.render(width: page.width*5, height: page.height*5,format: PdfPageImageFormat.png,backgroundColor: '#FFFFFF',quality: 100);
+      final pageImage = await page.render(
+          width: page.width * 5,
+          height: page.height * 5,
+          format: PdfPageImageFormat.png,
+          backgroundColor: '#FFFFFF',
+          quality: 100);
       await page.close();
       Uint8List jpgBytes = pageImage!.bytes;
       return jpgBytes;
@@ -99,7 +104,8 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     final dio = Dio();
 
     try {
-      final apiKey = "AIzaSyCgsPmiy-AMhwfNzc085k7GQcuqIR8dzTE"; // Replace with a secure method to retrieve the API key
+      final apiKey =
+          "AIzaSyCgsPmiy-AMhwfNzc085k7GQcuqIR8dzTE"; // Replace with a secure method to retrieve the API key
       final base64Data = base64Encode(selectedFileBytes!);
 
       final url =
@@ -111,13 +117,10 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productDetails (containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate, remainingDetails).If warrantyStartDate is present always calculate the warrantyEndDate. Make sure the number of products is always one. Please skip the item from the json which is not present"
+                    "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productDetails (containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate, remainingDetails).If warrantyStartDate is present always calculate the warrantyEndDate. Make sure the number of products is always one. Please skip the item from the json which is not present"
               },
               {
-                "inline_data": {
-                  "mime_type": "image/jpeg",
-                  "data": base64Data
-                }
+                "inline_data": {"mime_type": "image/jpeg", "data": base64Data}
               }
             ]
           }
@@ -133,7 +136,8 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
       );
 
       if (response.statusCode == 200) {
-        final extractedText = response.data['candidates']?[0]['content']?['parts']?[0]['text'];
+        final extractedText =
+            response.data['candidates']?[0]['content']?['parts']?[0]['text'];
         if (extractedText != null) {
           final jsonStart = extractedText.indexOf('{');
           final jsonEnd = extractedText.lastIndexOf('}');
@@ -141,7 +145,10 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             final jsonString = extractedText.substring(jsonStart, jsonEnd + 1);
             setState(() {
               extractedData = jsonDecode(jsonString);
-              objectData?.addAll({extractedData!.values.toList()[0]:extractedData!.values.toList()[1]});
+              objectData?.addAll({
+                extractedData!.values.toList()[0]:
+                    extractedData!.values.toList()[1]
+              });
             });
           } else {
             throw Exception('No valid JSON found in response text.');
@@ -168,9 +175,12 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
   }
 
   String formatKey(String key) {
-    return key.replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (match) {
-      return '${match.group(1)} ${match.group(2)}';
-    }).toUpperCase().replaceAll('_', ' ');
+    return key
+        .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (match) {
+          return '${match.group(1)} ${match.group(2)}';
+        })
+        .toUpperCase()
+        .replaceAll('_', ' ');
   }
 
   Widget buildNestedList(dynamic data, {int level = 0}) {
@@ -199,7 +209,9 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     } else if (data is List) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: data.map((item) => buildNestedList(item, level: level + 1)).toList(),
+        children: data
+            .map((item) => buildNestedList(item, level: level + 1))
+            .toList(),
       );
     } else {
       return Padding(
@@ -222,53 +234,63 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
         title: Text('Bill Buddy'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Stack(
-          alignment: Alignment(0, 0),
-    children: [
-      Stack(
-        children: [
-           Column(
-              mainAxisSize: MainAxisSize.min,
-                 children: [
-                    Opacity(
-                      opacity: 1
-                    )]),
-          isLoading ? CircularProgressIndicator(color: Colors.black):SizedBox(),
-        ],
-      ),
-      Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ElevatedButton(
-              onPressed: isLoading ? null : pickFile,
-              child: isLoading ? Text('Analyzing...')
-               : Text('Upload Bill'),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed:(){
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const DetailsWidget()),
-                );
-            },
-              child: Text('Founder ka button')
-            ),
-            if (selectedFileBytes != null) Text('Selected File: $selectedFileName'),
-            SizedBox(height: 20),
-            Expanded(
-              child: objectData != null
-                  ? SingleChildScrollView(
-                child: buildNestedList(objectData!),
-              )
-                  : Center(
-                child: Text('Upload an invoice or bill to analyze.'),
+          padding: const EdgeInsets.all(16.0),
+          child: Stack(
+            alignment: Alignment(0, 0),
+            children: [
+              Stack(
+                children: [
+                  Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [Opacity(opacity: 1)]),
+                  isLoading
+                      ? CircularProgressIndicator(color: Colors.black)
+                      : SizedBox(),
+                ],
               ),
-            ),
-          ],
-        )],
-      )),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ElevatedButton(
+                    onPressed: isLoading ? null : pickFile,
+                    child:
+                        isLoading ? Text('Analyzing...') : Text('Upload Bill'),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const DetailsWidget(details: {
+                                    'Price': '2100',
+                                    "Purchase Date": "20/05/2024",
+                                    "Insurance Date": "21/05/2024",
+                                    "Insurance Expiry Date": "21/05/2025",
+                                    "Warranty Start Date": "21/06/2024",
+                                    "Warranty End Date": "21/06/2025",
+                                  })),
+                        );
+                      },
+                      child: Text('Founder ka button')),
+                  if (selectedFileBytes != null)
+                    Text('Selected File: $selectedFileName'),
+                  SizedBox(height: 20),
+                  Expanded(
+                    child: objectData != null
+                        ? SingleChildScrollView(
+                            child: buildNestedList(objectData!),
+                          )
+                        : Center(
+                            child:
+                                Text('Upload an invoice or bill to analyze.'),
+                          ),
+                  ),
+                ],
+              )
+            ],
+          )),
     );
   }
 }

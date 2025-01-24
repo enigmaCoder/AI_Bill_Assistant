@@ -1,9 +1,10 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class DetailsWidget extends StatefulWidget {
-  const DetailsWidget({super.key});
+  final Map<String, dynamic> details; // Add this line
+
+  const DetailsWidget({super.key, required this.details}); // Update constructor
 
   @override
   State<StatefulWidget> createState() => _DetailsState();
@@ -12,14 +13,53 @@ class DetailsWidget extends StatefulWidget {
 class _DetailsState extends State<DetailsWidget> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.amber
-      ),
-      child: Column(
-        children: [
-          Text("Hello Shubham")
-        ],
+    const title = 'Bill Buddy';
+
+    return MaterialApp(
+      title: title,
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text(title),
+        ),
+        body: GridView(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // Two columns
+            childAspectRatio: 2, // Adjust aspect ratio as needed
+          ),
+          children: widget.details.entries.map((entry) {
+            // Use widget.details
+            return Card(
+              elevation: 0, // Remove shadow
+              margin: EdgeInsets.zero, // Remove default margin
+              color: Colors.transparent,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                          entry.key
+                              .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'),
+                                  (match) {
+                                return '${match.group(1)} ${match.group(2)}';
+                              })
+                              .toUpperCase()
+                              .replaceAll('_', ' '),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center),
+                      Text(
+                        entry.value.toString(),
+                        textAlign: TextAlign.center,
+                      ), // Properly display value
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

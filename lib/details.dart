@@ -2,9 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class DetailsWidget extends StatefulWidget {
-  final Map<String, dynamic> details; // Add this line
+  final Map<String, dynamic> details;
+  final String productName;// Add this line
 
-  const DetailsWidget({super.key, required this.details}); // Update constructor
+  const DetailsWidget({super.key, required this.details, required this.productName}); // Update constructor
 
   @override
   State<StatefulWidget> createState() => _DetailsState();
@@ -21,7 +22,20 @@ class _DetailsState extends State<DetailsWidget> {
         appBar: AppBar(
           title: const Text(title),
         ),
-        body: GridView(
+        body: Column(
+          children: [
+        Padding(
+        padding: const EdgeInsets.all(10.0),
+          child:Text(
+          widget.productName.toUpperCase(),
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold
+          ),
+          overflow: TextOverflow.visible,
+        )),
+        Expanded(
+            child: GridView(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2, // Two columns
             childAspectRatio: 2, // Adjust aspect ratio as needed
@@ -58,7 +72,7 @@ class _DetailsState extends State<DetailsWidget> {
               ),
             );
           }).toList(),
-        ),
+        ))]),
       ),
     );
   }

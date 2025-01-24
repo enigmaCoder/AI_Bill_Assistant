@@ -29,9 +29,6 @@ class _DetailsState extends State<DetailsWidget> {
           children: widget.details.entries.map((entry) {
             // Use widget.details
             return Card(
-              elevation: 0, // Remove shadow
-              margin: EdgeInsets.zero, // Remove default margin
-              color: Colors.transparent,
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -39,7 +36,8 @@ class _DetailsState extends State<DetailsWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
+                  Center(
+                  child: Text(
                           entry.key
                               .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'),
                                   (match) {
@@ -48,11 +46,12 @@ class _DetailsState extends State<DetailsWidget> {
                               .toUpperCase()
                               .replaceAll('_', ' '),
                           style: const TextStyle(fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.center),
-                      Text(
+                          textAlign: TextAlign.center)),
+                      Center(
+                        child: Text(
                         entry.value.toString(),
                         textAlign: TextAlign.center,
-                      ), // Properly display value
+                      )), // Properly display value
                     ],
                   ),
                 ),

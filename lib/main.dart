@@ -145,10 +145,10 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             final jsonString = extractedText.substring(jsonStart, jsonEnd + 1);
             setState(() {
               extractedData = jsonDecode(jsonString);
-              objectData?.addAll({
-                extractedData!.values.toList()[0]:
-                    extractedData!.values.toList()[1]
-              });
+              Map<String,dynamic> extraData = {};
+              extraData.addAll(extractedData!.values.toList()[1]);
+              extraData.removeWhere((key, value) => value == null);
+              objectData?.addAll({extractedData!.values.toList()[0]:extraData});
             });
           } else {
             throw Exception('No valid JSON found in response text.');
@@ -189,8 +189,19 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: data.entries.map((entry) {
           return Padding(
-            padding: EdgeInsets.only(left: level * 16.0),
-            child: ExpansionTile(
+            padding: EdgeInsets.all(8.0),
+            child: ElevatedButton(
+              onPressed: () {  },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50), // Set minimum width and height
+                ),
+                child: Text(
+                  formatKey(entry.key),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+            ))
+            /*ExpansionTile(
               title: Text(
                 formatKey(entry.key),
                 style: TextStyle(
@@ -202,7 +213,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
               children: [
                 buildNestedList(entry.value, level: level + 1),
               ],
-            ),
+            )*/,
           );
         }).toList(),
       );

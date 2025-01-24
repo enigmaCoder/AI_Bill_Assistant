@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class DetailsWidget extends StatefulWidget {
@@ -18,6 +17,7 @@ class _DetailsState extends State<DetailsWidget> {
 
     return MaterialApp(
       title: title,
+      theme: ThemeData.dark(),
       home: Scaffold(
         appBar: AppBar(
           title: const Text(title),

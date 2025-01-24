@@ -149,7 +149,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
               extraData.addAll(extractedData!.values.toList()[2]);
               extraData.removeWhere((key, value) => value == null);
               objectData
-                  ?.addAll({extractedData!.values.toList()[0]: extraData});
+                  ?.addAll({extractedData!.values.toList()[0]: {extractedData!.values.toList()[1]:extraData}});
             });
           } else {
             throw Exception('No valid JSON found in response text.');
@@ -169,7 +169,8 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     }
   }
 
-Icon getIcon(String productName) {
+Icon getIcon(Map<dynamic,dynamic> productTypeValues) {
+   String productName = productTypeValues.keys.toList()[0];
   // Customize the icon based on the productName
   if (productName.toLowerCase().contains('electronics')) {
     return Icon(Icons.devices);
@@ -214,7 +215,7 @@ Icon getIcon(String productName) {
                       BorderRadius.circular(5.0), // For perfectly sharp corners
                 ),
               ),
-              icon: getIcon(entry.key), // The icon
+              icon: getIcon(entry.value), // The icon
               label: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,

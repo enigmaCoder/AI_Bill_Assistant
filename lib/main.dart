@@ -330,11 +330,7 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
                     label:
                         isLoading ? Text('Analyzing...') : Text('Upload Bill'),
                   ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                      onPressed: () {},
-                      child: Text('Founder ka button')),
-                  SizedBox(height: 20),
+                  SizedBox(height: 30),
                   Expanded(
                     child: objectData != null
                         ? SingleChildScrollView(

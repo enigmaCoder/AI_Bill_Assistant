@@ -115,7 +115,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                    "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice into a structured JSON format with fields: productName, productType (categorized as electronics, fashion, grocery, or others), and productDetails containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate (calculated if warrantyStartDate is present), and remainingDetails, ensuring only one product is included and skipping any missing fields."
+                    "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productType (categorized as electronics, fashion, grocery, or others), productDetails (containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate), and remainingDetails.If warrantyStartDate is present always calculate the warrantyEndDate. Make sure the number of products is always one. Please skip the item from the json which is not present"
               },
               {
                 "inline_data": {"mime_type": "image/jpeg", "data": base64Data}
@@ -184,6 +184,15 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     }
   }
 
+void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String productName){
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+        builder: (context) =>
+        DetailsWidget(details: productTypeValues.values.toList()[0],productName: productName)),
+  );
+}
+
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
@@ -207,7 +216,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
           return Padding(
             padding: EdgeInsets.all(8.0),
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {triggerDetailsScreen(entry.value,entry.key);},
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(
@@ -235,8 +244,8 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
                           textAlign: TextAlign.left,
                           overflow: TextOverflow.ellipsis,
                         ),
-                    
-                         
+
+
                       ],
                     ),
                   ),
@@ -323,21 +332,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
                   ),
                   SizedBox(height: 10),
                   ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  const DetailsWidget(details: {
-                                    'Price': '2100',
-                                    "Purchase Date": "20/05/2024",
-                                    "Insurance Date": "21/05/2024",
-                                    "Insurance Expiry Date": "21/05/2025",
-                                    "Warranty Start Date": "21/06/2024",
-                                    "Warranty End Date": "21/06/2025",
-                                  })),
-                        );
-                      },
+                      onPressed: () {},
                       child: Text('Founder ka button')),
                   SizedBox(height: 20),
                   Expanded(

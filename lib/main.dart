@@ -117,7 +117,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                    "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productDetails (containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate, remainingDetails).If warrantyStartDate is present always calculate the warrantyEndDate. Make sure the number of products is always one. Please skip the item from the json which is not present"
+                    "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice into a structured JSON format with fields: productName, productType (categorized as electronics, fashion, grocery, or others), and productDetails containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate (calculated if warrantyStartDate is present), and remainingDetails, ensuring only one product is included and skipping any missing fields."
               },
               {
                 "inline_data": {"mime_type": "image/jpeg", "data": base64Data}
@@ -145,8 +145,8 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             final jsonString = extractedText.substring(jsonStart, jsonEnd + 1);
             setState(() {
               extractedData = jsonDecode(jsonString);
-              Map<String, dynamic> extraData = {};
-              extraData.addAll(extractedData!.values.toList()[1]);
+              Map<String,dynamic> extraData = {};
+              extraData.addAll(extractedData!.values.toList()[2]);
               extraData.removeWhere((key, value) => value == null);
               objectData
                   ?.addAll({extractedData!.values.toList()[0]: extraData});
@@ -168,6 +168,8 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
       });
     }
   }
+
+
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -306,8 +308,6 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
                         );
                       },
                       child: Text('Founder ka button')),
-                  if (selectedFileBytes != null)
-                    Text('Selected File: $selectedFileName'),
                   SizedBox(height: 20),
                   Expanded(
                     child: objectData != null

@@ -169,7 +169,18 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     }
   }
 
-
+Icon getIcon(String productName) {
+  // Customize the icon based on the productName
+  if (productName.toLowerCase().contains('electronics')) {
+    return Icon(Icons.devices);
+  } else if (productName.toLowerCase().contains('fashion')) {
+    return Icon(Icons.checkroom);
+  } else if (productName.toLowerCase().contains('grocery')) {
+    return Icon(Icons.shopping_basket);
+  } else {
+    return Icon(Icons.shopping_cart); // Default icon
+  }
+}
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -203,7 +214,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
                       BorderRadius.circular(5.0), // For perfectly sharp corners
                 ),
               ),
-              icon: const Icon(Icons.shopping_cart), // The icon
+              icon: getIcon(entry.key), // The icon
               label: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,

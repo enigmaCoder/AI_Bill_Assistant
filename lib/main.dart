@@ -145,10 +145,11 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             final jsonString = extractedText.substring(jsonStart, jsonEnd + 1);
             setState(() {
               extractedData = jsonDecode(jsonString);
-              Map<String,dynamic> extraData = {};
+              Map<String, dynamic> extraData = {};
               extraData.addAll(extractedData!.values.toList()[1]);
               extraData.removeWhere((key, value) => value == null);
-              objectData?.addAll({extractedData!.values.toList()[0]:extraData});
+              objectData
+                  ?.addAll({extractedData!.values.toList()[0]: extraData});
             });
           } else {
             throw Exception('No valid JSON found in response text.');
@@ -190,17 +191,37 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
         children: data.entries.map((entry) {
           return Padding(
             padding: EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: () {  },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50), // Set minimum width and height
+            child: ElevatedButton.icon(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  // Add this
+                  borderRadius:
+                      BorderRadius.circular(5.0), // For perfectly sharp corners
                 ),
-                child: Text(
-                  formatKey(entry.key),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-            ))
+              ),
+              icon: const Icon(Icons.shopping_cart), // The icon
+              label: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    formatKey(entry.key),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                    textAlign: TextAlign.left,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (entry.value is Map && entry.value['purchaseDate'] != null)
+                    Text(
+                      entry.value['purchaseDate'].toString(),
+                      textAlign: TextAlign.left,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                ],
+              ),
+            )
             /*ExpansionTile(
               title: Text(
                 formatKey(entry.key),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:pdfx/pdfx.dart';
+import 'details.dart';
 
 void main() {
   runApp(MyApp());
@@ -13,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AI Bill Reader',
+      title: 'Bill Buddy',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -31,6 +32,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
   String? selectedFileName;
   Uint8List? selectedFileBytes;
   Map<String, dynamic>? extractedData;
+  Map<String, dynamic>? objectData = {};
   bool isLoading = false;
 
   Future<void> pickFile() async {
@@ -47,6 +49,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             setState(() {
               selectedFileBytes = imageBytes.asUnmodifiableView();
               selectedFileName = file.name;
+              analyzeInvoice();
             });
           } else {
             showError('Failed to convert PDF to image.');
@@ -55,6 +58,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
           setState(() {
             selectedFileBytes = file.bytes;
             selectedFileName = file.name;
+            analyzeInvoice();
           });
         }
       }
@@ -107,7 +111,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productDetails (containing purchaseDate, price, insuranceDate, expiryDate, description, sellerInformation, productType, remainingDetails)"
+                "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productDetails (containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate, remainingDetails).If warrantyStartDate is present always calculate the warrantyEndDate. Make sure the number of products is always one. Please skip the item from the json which is not present"
               },
               {
                 "inline_data": {
@@ -137,6 +141,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             final jsonString = extractedText.substring(jsonStart, jsonEnd + 1);
             setState(() {
               extractedData = jsonDecode(jsonString);
+              objectData?.addAll({extractedData!.values.toList()[0]:extractedData!.values.toList()[1]});
             });
           } else {
             throw Exception('No valid JSON found in response text.');
@@ -214,39 +219,56 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('AI Bill Reader'),
+        title: Text('Bill Buddy'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child: Stack(
+          alignment: Alignment(0, 0),
+    children: [
+      Stack(
+        children: [
+           Column(
+              mainAxisSize: MainAxisSize.min,
+                 children: [
+                    Opacity(
+                      opacity: 1
+                    )]),
+          isLoading ? CircularProgressIndicator(color: Colors.black):SizedBox(),
+        ],
+      ),
+      Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ElevatedButton(
-              onPressed: pickFile,
-              child: Text('Upload Invoice'),
+              onPressed: isLoading ? null : pickFile,
+              child: isLoading ? Text('Analyzing...')
+               : Text('Upload Bill'),
             ),
             SizedBox(height: 10),
+            ElevatedButton(
+              onPressed:(){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DetailsWidget()),
+                );
+            },
+              child: Text('Founder ka button')
+            ),
             if (selectedFileBytes != null) Text('Selected File: $selectedFileName'),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isLoading ? null : analyzeInvoice,
-              child: isLoading
-                  ? CircularProgressIndicator(color: Colors.white)
-                  : Text('Analyze'),
-            ),
-            SizedBox(height: 20),
             Expanded(
-              child: extractedData != null
+              child: objectData != null
                   ? SingleChildScrollView(
-                child: buildNestedList(extractedData!),
+                child: buildNestedList(objectData!),
               )
                   : Center(
                 child: Text('Upload an invoice or bill to analyze.'),
               ),
             ),
           ],
-        ),
-      ),
+        )],
+      )),
     );
   }
 }

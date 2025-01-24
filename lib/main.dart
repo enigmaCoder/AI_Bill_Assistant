@@ -15,9 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Bill Buddy',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData.dark(),
       home: InvoiceAnalyzer(),
     );
   }
@@ -145,11 +143,14 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             final jsonString = extractedText.substring(jsonStart, jsonEnd + 1);
             setState(() {
               extractedData = jsonDecode(jsonString);
-              Map<String,dynamic> extraData = {};
+              Map<String, dynamic> extraData = {};
               extraData.addAll(extractedData!.values.toList()[2]);
               extraData.removeWhere((key, value) => value == null);
-              objectData
-                  ?.addAll({extractedData!.values.toList()[0]: {extractedData!.values.toList()[1]:extraData}});
+              objectData?.addAll({
+                extractedData!.values.toList()[0]: {
+                  extractedData!.values.toList()[1]: extraData
+                }
+              });
             });
           } else {
             throw Exception('No valid JSON found in response text.');
@@ -169,19 +170,19 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     }
   }
 
-Icon getIcon(Map<dynamic,dynamic> productTypeValues) {
-   String productName = productTypeValues.keys.toList()[0];
-  // Customize the icon based on the productName
-  if (productName.toLowerCase().contains('electronics')) {
-    return Icon(Icons.devices);
-  } else if (productName.toLowerCase().contains('fashion')) {
-    return Icon(Icons.checkroom);
-  } else if (productName.toLowerCase().contains('grocery')) {
-    return Icon(Icons.shopping_basket);
-  } else {
-    return Icon(Icons.shopping_cart); // Default icon
+  Icon getIcon(Map<dynamic, dynamic> productTypeValues) {
+    String productName = productTypeValues.keys.toList()[0];
+    // Customize the icon based on the productName
+    if (productName.toLowerCase().contains('electronics')) {
+      return Icon(Icons.devices);
+    } else if (productName.toLowerCase().contains('fashion')) {
+      return Icon(Icons.checkroom);
+    } else if (productName.toLowerCase().contains('grocery')) {
+      return Icon(Icons.shopping_basket);
+    } else {
+      return Icon(Icons.shopping_cart); // Default icon
+    }
   }
-}
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -216,23 +217,29 @@ Icon getIcon(Map<dynamic,dynamic> productTypeValues) {
                 ),
               ),
               icon: getIcon(entry.value), // The icon
-              label: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
+              label: Row(
+                // Use a Row
                 children: [
-                  Text(
-                    formatKey(entry.key),
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                    textAlign: TextAlign.left,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (entry.value is Map && entry.value['purchaseDate'] != null)
-                    Text(
-                      entry.value['purchaseDate'].toString(),
-                      textAlign: TextAlign.left,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  // Icon is already part of ElevatedButton.icon, so don't add it here
+                  SizedBox(width: 8), // Optional spacing between icon and text
+                  Expanded(
+                    // Ensure text takes remaining space and wraps if needed
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          formatKey(entry.key),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
+                          textAlign: TextAlign.left,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    
+                         
+                      ],
                     ),
+                  ),
                 ],
               ),
             )
@@ -297,9 +304,21 @@ Icon getIcon(Map<dynamic,dynamic> productTypeValues) {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ElevatedButton(
+                  ElevatedButton.icon(
                     onPressed: isLoading ? null : pickFile,
-                    child:
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green, // Background color
+                      foregroundColor: Colors.white, // Text and icon color
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12), // Adjust padding
+                      textStyle: TextStyle(fontSize: 16), // Text size
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(8), // Rounded corners
+                      ),
+                    ),
+                    icon: Icon(Icons.upload_file, color: Colors.white), // Choose an appropriate icon
+                    label:
                         isLoading ? Text('Analyzing...') : Text('Upload Bill'),
                   ),
                   SizedBox(height: 10),

@@ -64,3 +64,32 @@ class _DetailsState extends State<DetailsWidget> {
     );
   }
 }
+
+// class _DetailsState extends State<DetailsWidget> {
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text('Invoice Details'),
+//       ),
+//       body: ListView.builder(
+//         itemCount: widget.details.length,
+//         itemBuilder: (context, index) {
+//           final entry = widget.details.entries.elementAt(index);
+//           final productDetails = entry.value;
+
+//           return ListTile(
+//             leading: Icon(Icons.shopping_cart), // Replace with your desired icon
+//             title: Text(productDetails),
+//             subtitle: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text('Purchase Date: MM-DD-YYYY'),
+//               ],
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+// }

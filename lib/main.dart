@@ -115,7 +115,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                    "You are an expert invoice analyst; Please extract and summarize all relevant details from the invoice in a structured JSON format, with fields: productName, productType (categorized as electronics, fashion, grocery, or others), productDetails (containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate), and remainingDetails.If warrantyStartDate is present always calculate the warrantyEndDate. Make sure the number of products is always one. Please skip the item from the json which is not present"
+                    "You are an expert invoice analyst; Extract and summarize invoice details into a JSON format with fields: productName, productType (categorized as electronics, fashion, grocery, or others), productDetails (containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate), and productDescription ( 3 or 4 words describing the product amd should be different from productName with proper formatting), ensuring only one product is included, excluding absent fields, and always calculate and include warrantyEndDate when warrantyStartDate is present, assuming a 1-year warranty if unspecified"
               },
               {
                 "inline_data": {"mime_type": "image/jpeg", "data": base64Data}
@@ -148,7 +148,8 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
               extraData.removeWhere((key, value) => value == null);
               objectData?.addAll({
                 extractedData!.values.toList()[0]: {
-                  extractedData!.values.toList()[1]: extraData
+                  extractedData!.values.toList()[1]: extraData,
+                  extractedData!.keys.toList()[3]:extractedData!.values.toList()[3]
                 }
               });
             });
@@ -168,6 +169,10 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
         isLoading = false;
       });
     }
+  }
+
+  String getProductDescription(Map<dynamic, dynamic> productValues) {
+    return productValues.values.toList()[1];
   }
 
   Icon getIcon(Map<dynamic, dynamic> productTypeValues) {
@@ -214,8 +219,24 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
         crossAxisAlignment: CrossAxisAlignment.start,
         children: data.entries.map((entry) {
           return Padding(
-            padding: EdgeInsets.all(8.0),
-            child: ElevatedButton.icon(
+            padding: EdgeInsets.all(1.0),
+            child: ListTile(
+              leading: getIcon(entry.value),
+              title: Text(
+                  entry.key,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                  textAlign: TextAlign.left,
+                  overflow: TextOverflow.ellipsis
+              ),
+              subtitle: Text(getProductDescription(entry.value)),
+              trailing: Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                triggerDetailsScreen(entry.value,entry.key);
+              },
+            )
+
+            /*child: ElevatedButton.icon(
               onPressed: () {triggerDetailsScreen(entry.value,entry.key);},
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
@@ -251,7 +272,7 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
                   ),
                 ],
               ),
-            )
+            )*/
             /*ExpansionTile(
               title: Text(
                 formatKey(entry.key),
@@ -293,7 +314,13 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Bill Buddy'),
+        title: Text(
+          'BILL Buddy',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ), // Background color
+        centerTitle: true, // Center the title
+        elevation: 4, // Shadow effect
+        leading: Icon(Icons.menu),
       ),
       body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -306,30 +333,13 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
                       mainAxisSize: MainAxisSize.min,
                       children: [Opacity(opacity: 1)]),
                   isLoading
-                      ? CircularProgressIndicator(color: Colors.black)
+                      ? CircularProgressIndicator(color: Colors.purpleAccent.shade100)
                       : SizedBox(),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ElevatedButton.icon(
-                    onPressed: isLoading ? null : pickFile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green, // Background color
-                      foregroundColor: Colors.white, // Text and icon color
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12), // Adjust padding
-                      textStyle: TextStyle(fontSize: 16), // Text size
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(8), // Rounded corners
-                      ),
-                    ),
-                    icon: Icon(Icons.upload_file, color: Colors.white), // Choose an appropriate icon
-                    label:
-                        isLoading ? Text('Analyzing...') : Text('Upload Bill'),
-                  ),
                   SizedBox(height: 30),
                   Expanded(
                     child: objectData != null
@@ -341,6 +351,13 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
                                 Text('Upload an invoice or bill to analyze.'),
                           ),
                   ),
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: FloatingActionButton(
+                      onPressed: isLoading ? null : pickFile,
+                      child: Icon(Icons.add),
+                    ),
+                  )
                 ],
               )
             ],

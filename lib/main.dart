@@ -150,7 +150,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                    "You are an expert invoice analyst; Extract and summarize invoice details into a JSON format with fields: productName, productType (categorized as electronics, fashion, grocery, or others), purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate and productDescription ( 3 or 4 words describing the product amd should be different from productName with proper formatting), ensuring only one product is included, excluding absent fields, and always calculate and include warrantyEndDate when warrantyStartDate is present, assuming a 1-year warranty if unspecified"
+                    "You are an expert invoice analyst; Extract and summarize invoice details into a JSON format with fields: productName, productType (categorized as electronics, fashion, grocery, or others), purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate and productDescription ( 3 or 4 words describing the product amd should be different from productName with proper formatting and is mandatory), ensuring only one product is included, excluding absent fields, and always calculate and include warrantyEndDate when warrantyStartDate is present, assuming a 1-year warranty if unspecified, and all dates in format of DD-MM-YYYY"
               },
               {
                 "inline_data": {"mime_type": "image/jpeg", "data": base64Data}
@@ -179,8 +179,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             setState(() {
               extractedData = jsonDecode(jsonString);
               objectNewData = extractedData!.map((key, value) => MapEntry(key, value.toString()));
-              insertOrUpdateProduct(objectNewData!, widget.productBox);
-              objectData = widget.productBox.toMap().cast<String,Product>();
+              triggerDetailsScreen(objectNewData!, objectNewData!["productName"]!,widget.productBox,true);
             });
           } else {
             throw Exception('No valid JSON found in response text.');
@@ -214,13 +213,15 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
   }
 
 
-void triggerDetailsScreen(Map<String,dynamic> productDetails, String productName){
+void triggerDetailsScreen(Map<String,String> productDetails, String productName, Box<Product> productBox, bool isEditable){
   Navigator.push(
     context,
     MaterialPageRoute(
         builder: (context) =>
-        DetailsWidget(details: productDetails,productName: productName)),
-  );
+        DetailsWidget(details: productDetails,productName: productName,productBox: productBox,isEditable: isEditable)),
+  ).then((result){
+      setState(() {});
+  });
 }
 
   void showError(String message) {
@@ -258,7 +259,7 @@ void triggerDetailsScreen(Map<String,dynamic> productDetails, String productName
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text((entry.value as Product).productDescription!),
+                  Text((entry.value as Product).productDescription ?? ""),
                   Row(
                     children: [
                       Text('Warranty: Active', style: TextStyle(color: Colors.green)),
@@ -269,7 +270,7 @@ void triggerDetailsScreen(Map<String,dynamic> productDetails, String productName
               ),
               trailing: Icon(Icons.arrow_forward_ios),
               onTap: () {
-                triggerDetailsScreen((entry.value as Product).toMap(),entry.key);
+                triggerDetailsScreen((entry.value as Product).toMap(),entry.key,widget.productBox,false);
               },
             )
 
@@ -347,10 +348,17 @@ void triggerDetailsScreen(Map<String,dynamic> productDetails, String productName
     }
   }
 
+  Future<bool> _onWillPop() async {
+    setState(() {});
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     objectData = widget.productBox.toMap().cast<String,Product>();
-    return Scaffold(
+    return WillPopScope(
+        onWillPop: _onWillPop,  // Set the callback for system back button
+        child: Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
@@ -398,6 +406,6 @@ void triggerDetailsScreen(Map<String,dynamic> productDetails, String productName
               )
             ],
           )),
-    );
+    ));
   }
 }

@@ -1,12 +1,19 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:ai_bill_assistant/product.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:pdfx/pdfx.dart';
 import 'details.dart';
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(ProductAdapter());
+  await Hive.openBox<Product>('products');
   runApp(MyApp());
 }
 
@@ -21,7 +28,34 @@ class MyApp extends StatelessWidget {
   }
 }
 
+Future<void> insertOrUpdateProduct(Map<String, String> data, Box<Product> productBox) async {
+  final product = Product.fromMap(data);
+  await productBox.put(product.productName, product); // Use productName as the key
+}
+
+Future<void> insertOrUpdateKey(String productName, String key, String newValue, Box<Product> productBox) async {
+  final product = productBox.get(productName);
+  if (product != null) {
+    final productMap = product.toMap(); // Get the map representation
+    productMap[key] = newValue; // Update the key with new value
+    final updatedProduct = Product.fromMap(productMap);
+    await productBox.put(updatedProduct.productName, updatedProduct);
+  } else {
+    await productBox.put(
+      productName,
+      Product(productName: productName, price: newValue), // Default key-value pair (price in this case)
+    );
+  }
+}
+
+Future<String?> getFieldByProductName(String productName, String key,Box<Product> productBox) async {
+  final product = productBox.get(productName);
+  return product?.toMap()[key];
+}
+
+
 class InvoiceAnalyzer extends StatefulWidget {
+  final Box<Product> productBox = Hive.box<Product>('products');
   @override
   _InvoiceAnalyzerState createState() => _InvoiceAnalyzerState();
 }
@@ -30,7 +64,8 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
   String? selectedFileName;
   Uint8List? selectedFileBytes;
   Map<String, dynamic>? extractedData;
-  Map<String, dynamic>? objectData = {};
+  Map<String, String>? objectNewData = {};
+  Map<String, Product> objectData = {};
   bool isLoading = false;
 
   Future<void> pickFile() async {
@@ -115,7 +150,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                    "You are an expert invoice analyst; Extract and summarize invoice details into a JSON format with fields: productName, productType (categorized as electronics, fashion, grocery, or others), productDetails (containing purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate), and productDescription ( 3 or 4 words describing the product amd should be different from productName with proper formatting), ensuring only one product is included, excluding absent fields, and always calculate and include warrantyEndDate when warrantyStartDate is present, assuming a 1-year warranty if unspecified"
+                    "You are an expert invoice analyst; Extract and summarize invoice details into a JSON format with fields: productName, productType (categorized as electronics, fashion, grocery, or others), purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate and productDescription ( 3 or 4 words describing the product amd should be different from productName with proper formatting), ensuring only one product is included, excluding absent fields, and always calculate and include warrantyEndDate when warrantyStartDate is present, assuming a 1-year warranty if unspecified"
               },
               {
                 "inline_data": {"mime_type": "image/jpeg", "data": base64Data}
@@ -143,15 +178,9 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             final jsonString = extractedText.substring(jsonStart, jsonEnd + 1);
             setState(() {
               extractedData = jsonDecode(jsonString);
-              Map<String, dynamic> extraData = {};
-              extraData.addAll(extractedData!.values.toList()[2]);
-              extraData.removeWhere((key, value) => value == null);
-              objectData?.addAll({
-                extractedData!.values.toList()[0]: {
-                  extractedData!.values.toList()[1]: extraData,
-                  extractedData!.keys.toList()[3]:extractedData!.values.toList()[3]
-                }
-              });
+              objectNewData = extractedData!.map((key, value) => MapEntry(key, value.toString()));
+              insertOrUpdateProduct(objectNewData!, widget.productBox);
+              objectData = widget.productBox.toMap().cast<String,Product>();
             });
           } else {
             throw Exception('No valid JSON found in response text.');
@@ -171,30 +200,26 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     }
   }
 
-  String getProductDescription(Map<dynamic, dynamic> productValues) {
-    return productValues.values.toList()[1];
-  }
-
-  Icon getIcon(Map<dynamic, dynamic> productTypeValues) {
-    String productName = productTypeValues.keys.toList()[0];
+  Icon getIcon(String productType) {
     // Customize the icon based on the productName
-    if (productName.toLowerCase().contains('electronics')) {
+    if (productType.toLowerCase().contains('electronics')) {
       return Icon(Icons.devices);
-    } else if (productName.toLowerCase().contains('fashion')) {
+    } else if (productType.toLowerCase().contains('fashion')) {
       return Icon(Icons.checkroom);
-    } else if (productName.toLowerCase().contains('grocery')) {
+    } else if (productType.toLowerCase().contains('grocery')) {
       return Icon(Icons.shopping_basket);
     } else {
       return Icon(Icons.shopping_cart); // Default icon
     }
   }
 
-void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String productName){
+
+void triggerDetailsScreen(Map<String,dynamic> productDetails, String productName){
   Navigator.push(
     context,
     MaterialPageRoute(
         builder: (context) =>
-        DetailsWidget(details: productTypeValues.values.toList()[0],productName: productName)),
+        DetailsWidget(details: productDetails,productName: productName)),
   );
 }
 
@@ -221,7 +246,7 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
           return Padding(
             padding: EdgeInsets.all(1.0),
             child: ListTile(
-              leading: getIcon(entry.value),
+              leading: getIcon((entry.value as Product).productType!),
               title: Text(
                   entry.key,
                   style: const TextStyle(
@@ -229,10 +254,22 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
                   textAlign: TextAlign.left,
                   overflow: TextOverflow.ellipsis
               ),
-              subtitle: Text(getProductDescription(entry.value)),
+              //subtitle: Text(getProductDescription(entry.value)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text((entry.value as Product).productDescription!),
+                  Row(
+                    children: [
+                      Text('Warranty: Active', style: TextStyle(color: Colors.green)),
+                      Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    ],
+                  ),
+                ],
+              ),
               trailing: Icon(Icons.arrow_forward_ios),
               onTap: () {
-                triggerDetailsScreen(entry.value,entry.key);
+                triggerDetailsScreen((entry.value as Product).toMap(),entry.key);
               },
             )
 
@@ -312,7 +349,9 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
 
   @override
   Widget build(BuildContext context) {
+    objectData = widget.productBox.toMap().cast<String,Product>();
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
           'BILL Buddy',
@@ -323,7 +362,7 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
         leading: Icon(Icons.menu),
       ),
       body: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.only(top: 46.0),
           child: Stack(
             alignment: Alignment(0, 0),
             children: [
@@ -342,22 +381,19 @@ void triggerDetailsScreen(Map<dynamic,dynamic> productTypeValues, String product
                 children: [
                   SizedBox(height: 30),
                   Expanded(
-                    child: objectData != null
-                        ? SingleChildScrollView(
-                            child: buildNestedList(objectData!),
-                          )
-                        : Center(
-                            child:
-                                Text('Upload an invoice or bill to analyze.'),
+                    child: SingleChildScrollView(
+                            child: buildNestedList(objectData),
                           ),
                   ),
                   Align(
                     alignment: Alignment.bottomRight,
-                    child: FloatingActionButton(
+                    child: Padding(padding: EdgeInsets.all(30.0),
+                      child: FloatingActionButton(
+                        shape: CircleBorder(),
                       onPressed: isLoading ? null : pickFile,
                       child: Icon(Icons.add),
                     ),
-                  )
+                  ))
                 ],
               )
             ],

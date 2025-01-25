@@ -14,7 +14,8 @@ class _DetailsState extends State<DetailsWidget> {
   @override
   Widget build(BuildContext context) {
     const title = 'Bill Buddy';
-
+    widget.details.remove("productName");
+    widget.details.removeWhere((key, value) => value == "");
     return MaterialApp(
       title: title,
       theme: ThemeData.dark(),

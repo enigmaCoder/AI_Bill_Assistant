@@ -20,7 +20,12 @@ class _DetailsState extends State<DetailsWidget> {
       theme: ThemeData.dark(),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text(title),
+          title: Text(
+            'BILL Details',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      ), // Background color
+      centerTitle: true, // Center the title
+      elevation: 4,
         ),
         body: Column(
           children: [

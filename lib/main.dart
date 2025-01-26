@@ -239,91 +239,112 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
         .replaceAll('_', ' ');
   }
 
+  void confirmDelete(String productName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Delete Product"),
+          content: Text("Are you sure you want to delete $productName?"),
+          actions: [
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text("Delete"),
+              onPressed: () async {
+                await widget.productBox.delete(productName); // Delete the product
+                setState(() {}); // Refresh the UI
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   Widget buildNestedList(dynamic data, {int level = 0}) {
     if (data is Map) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: data.entries.map((entry) {
-          return Padding(
-            padding: EdgeInsets.all(1.0),
-            child: ListTile(
-              leading: getIcon((entry.value as Product).productType!),
-              title: Text(
-                  entry.key,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16),
-                  textAlign: TextAlign.left,
-                  overflow: TextOverflow.ellipsis
-              ),
-              //subtitle: Text(getProductDescription(entry.value)),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text((entry.value as Product).productDescription ?? ""),
-                  Row(
-                    children: [
-                      Text('Warranty: Active', style: TextStyle(color: Colors.green)),
-                      Icon(Icons.check_circle, color: Colors.green, size: 16),
-                    ],
-                  ),
-                ],
-              ),
-              trailing: Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                triggerDetailsScreen((entry.value as Product).toMap(),entry.key,widget.productBox,false);
-              },
-            )
+          bool isHovered = false;
 
-            /*child: ElevatedButton.icon(
-              onPressed: () {triggerDetailsScreen(entry.value,entry.key);},
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  // Add this
-                  borderRadius:
-                      BorderRadius.circular(5.0), // For perfectly sharp corners
-                ),
-              ),
-              icon: getIcon(entry.value), // The icon
-              label: Row(
-                // Use a Row
-                children: [
-                  // Icon is already part of ElevatedButton.icon, so don't add it here
-                  SizedBox(width: 8), // Optional spacing between icon and text
-                  Expanded(
-                    // Ensure text takes remaining space and wraps if needed
-                    child: Column(
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return MouseRegion(
+                onEnter: (_) => setState(() => isHovered = true),
+                onExit: (_) => setState(() => isHovered = false),
+                child: Padding(
+                  padding: EdgeInsets.all(1.0),
+                  child: ListTile(
+                    leading: getIcon((entry.value as Product).productType!),
+                    title: Text(
+                      entry.key,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.left,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          formatKey(entry.key),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                          textAlign: TextAlign.left,
-                          overflow: TextOverflow.ellipsis,
+                        Text((entry.value as Product).productDescription ?? ""),
+                        Row(
+                          children: [
+                            Text('Warranty: Active',
+                                style: TextStyle(color: Colors.green)),
+                            Icon(Icons.check_circle,
+                                color: Colors.green, size: 16),
+                          ],
                         ),
-
-
                       ],
                     ),
+                    trailing: isHovered
+                        ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Details icon
+                        IconButton(
+                          icon: Icon(Icons.edit_note, color: Colors.white),
+                          onPressed: () {
+                            triggerDetailsScreen(
+                              (entry.value as Product).toMap(),
+                              entry.key,
+                              widget.productBox,
+                              true,
+                            );
+                          },
+                          splashRadius: 20,
+                          tooltip: "View Details",
+                        ),
+                        // Delete icon
+                        IconButton(
+                          icon: Icon(Icons.close, color: Colors.white),
+                          onPressed: () {
+                            confirmDelete(entry.key);
+                          },
+                          splashRadius: 20,
+                          tooltip: "Delete",
+                        ),
+                      ],
+                    )
+                        : SizedBox.shrink(), // Empty space if not hovered
+                    onTap: () {
+                      triggerDetailsScreen((entry.value as Product).toMap(),
+                          entry.key, widget.productBox, false);
+                    },
                   ),
-                ],
-              ),
-            )*/
-            /*ExpansionTile(
-              title: Text(
-                formatKey(entry.key),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16.0 - level * 1.0,
-                  color: Colors.blueAccent.shade700,
                 ),
-              ),
-              children: [
-                buildNestedList(entry.value, level: level + 1),
-              ],
-            )*/,
+              );
+            },
           );
         }).toList(),
       );
@@ -347,6 +368,9 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
       );
     }
   }
+
+
+
 
   Future<bool> _onWillPop() async {
     setState(() {});

@@ -138,8 +138,9 @@ class _DetailsState extends State<DetailsWidget> {
           centerTitle: true,
           elevation: 4,
           actions: [
-            IconButton(
-              icon: Icon(isEditable ? Icons.check : Icons.edit),
+            Padding(padding: EdgeInsets.only(right: 8.0),
+            child: IconButton(
+              icon: isEditable ? Icon(Icons.check_circle, color: Colors.green, size: 30) : Icon(Icons.edit_note, color: Colors.white, size: 30),
               onPressed: () {
                 setState(() {
                   isEditable = !isEditable;
@@ -153,7 +154,7 @@ class _DetailsState extends State<DetailsWidget> {
                   }
                 });
               },
-            ),
+            )),
           ],
         ),
         body: Column(

@@ -5,38 +5,42 @@ part 'product.g.dart';
 @HiveType(typeId: 0) // Assign a unique typeId for this model
 class Product extends HiveObject {
   @HiveField(0)
-  String productName;
+  String productId;
 
   @HiveField(1)
-  String? productType;
+  String? productName;
 
   @HiveField(2)
-  String? purchaseDate;
+  String? productType;
 
   @HiveField(3)
-  String? price;
+  String? purchaseDate;
 
   @HiveField(4)
-  String? warrantyStartDate;
+  String? price;
 
   @HiveField(5)
-  String? warrantyEndDate;
+  String? warrantyStartDate;
 
   @HiveField(6)
-  String? productDescription;
+  String? warrantyEndDate;
 
   @HiveField(7)
-  String? insuranceDate;
+  String? productDescription;
 
   @HiveField(8)
+  String? insuranceDate;
+
+  @HiveField(9)
   String? insuranceExpiryDate;
 
-  Product({required this.productName, this.productType, this.purchaseDate, this.price, this.warrantyStartDate, this.warrantyEndDate, this.productDescription, this.insuranceDate, this.insuranceExpiryDate});
+  Product({required this.productId, this.productName, this.productType, this.purchaseDate, this.price, this.warrantyStartDate, this.warrantyEndDate, this.productDescription, this.insuranceDate, this.insuranceExpiryDate});
 
   // To convert a Map<String, String> to a Product instance
   factory Product.fromMap(Map<String, String> data) {
     return Product(
-      productName: data['productName']!,
+      productId: data['productId']!,
+      productName: data['productName'],
       productType: data['productType'],
       purchaseDate: data['purchaseDate'],
       price: data['price'],
@@ -51,7 +55,8 @@ class Product extends HiveObject {
   // To convert a Product instance to a Map<String, String>
   Map<String, String> toMap() {
     return {
-      'productName': productName,
+      'productId': productId,
+      'productName': productName ?? '',
       'productType': productType ?? '',
       'purchaseDate': purchaseDate ?? '',
       'price': price ?? '',

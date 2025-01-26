@@ -17,39 +17,42 @@ class ProductAdapter extends TypeAdapter<Product> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Product(
-      productName: fields[0] as String,
-      productType: fields[1] as String?,
-      purchaseDate: fields[2] as String?,
-      price: fields[3] as String?,
-      warrantyStartDate: fields[4] as String?,
-      warrantyEndDate: fields[5] as String?,
-      productDescription: fields[6] as String?,
-      insuranceDate: fields[7] as String?,
-      insuranceExpiryDate: fields[8] as String?,
+      productId: fields[0] as String,
+      productName: fields[1] as String?,
+      productType: fields[2] as String?,
+      purchaseDate: fields[3] as String?,
+      price: fields[4] as String?,
+      warrantyStartDate: fields[5] as String?,
+      warrantyEndDate: fields[6] as String?,
+      productDescription: fields[7] as String?,
+      insuranceDate: fields[8] as String?,
+      insuranceExpiryDate: fields[9] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Product obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
-      ..write(obj.productName)
+      ..write(obj.productId)
       ..writeByte(1)
-      ..write(obj.productType)
+      ..write(obj.productName)
       ..writeByte(2)
-      ..write(obj.purchaseDate)
+      ..write(obj.productType)
       ..writeByte(3)
-      ..write(obj.price)
+      ..write(obj.purchaseDate)
       ..writeByte(4)
-      ..write(obj.warrantyStartDate)
+      ..write(obj.price)
       ..writeByte(5)
-      ..write(obj.warrantyEndDate)
+      ..write(obj.warrantyStartDate)
       ..writeByte(6)
-      ..write(obj.productDescription)
+      ..write(obj.warrantyEndDate)
       ..writeByte(7)
-      ..write(obj.insuranceDate)
+      ..write(obj.productDescription)
       ..writeByte(8)
+      ..write(obj.insuranceDate)
+      ..writeByte(9)
       ..write(obj.insuranceExpiryDate);
   }
 

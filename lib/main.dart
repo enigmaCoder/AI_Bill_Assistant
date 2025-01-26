@@ -33,17 +33,17 @@ Future<void> insertOrUpdateProduct(Map<String, String> data, Box<Product> produc
   await productBox.put(product.productName, product); // Use productName as the key
 }
 
-Future<void> insertOrUpdateKey(String productName, String key, String newValue, Box<Product> productBox) async {
-  final product = productBox.get(productName);
+Future<void> insertOrUpdateKey(String productId, String productName, String key, String newValue, Box<Product> productBox) async {
+  final product = productBox.get(productId);
   if (product != null) {
     final productMap = product.toMap(); // Get the map representation
     productMap[key] = newValue; // Update the key with new value
     final updatedProduct = Product.fromMap(productMap);
-    await productBox.put(updatedProduct.productName, updatedProduct);
+    await productBox.put(updatedProduct.productId, updatedProduct);
   } else {
     await productBox.put(
-      productName,
-      Product(productName: productName, price: newValue), // Default key-value pair (price in this case)
+      productId,
+      Product(productId: productId,productName: productName, price: newValue), // Default key-value pair (price in this case)
     );
   }
 }
@@ -63,42 +63,35 @@ class InvoiceAnalyzer extends StatefulWidget {
 class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
   String? selectedFileName;
   Uint8List? selectedFileBytes;
-  Map<String, dynamic>? extractedData;
+  Map<String, Uint8List?>? selectedFilesMap;
+  List<Map<String, dynamic>>? extractedDataList;
   Map<String, String>? objectNewData = {};
   Map<String, Product> objectData = {};
   bool isLoading = false;
 
-  Future<void> pickFile() async {
+  Future<void> pickFiles() async {
     try {
-      final result = await FilePicker.platform.pickFiles(withData: true);
-      if (result != null && result.files.single.bytes != null) {
-        final file = result.files.single;
+      final result = await FilePicker.platform.pickFiles(withData: true, allowMultiple: true);
+      if (result != null) {
+        List<Map<String, dynamic>> fileInlineData = [];
 
-        // Check if the file is a PDF
-        if (file.extension == 'pdf') {
-          // Convert PDF to an image
-          final imageBytes = await convertPdfToImage(file);
-          if (imageBytes != null) {
-            setState(() {
-              selectedFileBytes = imageBytes.asUnmodifiableView();
-              selectedFileName = file.name;
-              analyzeInvoice();
-            });
-          } else {
-            showError('Failed to convert PDF to image.');
+        for (var file in result.files) {
+          if (file.bytes != null) {
+            final fileType = file.name.endsWith('.pdf') ? "application/pdf" : "image/jpeg";
+            final base64Data = base64Encode(file.bytes!);
+            fileInlineData.add({"inline_data":{"mime_type":fileType,"data":base64Data}});
           }
-        } else {
-          setState(() {
-            selectedFileBytes = file.bytes;
-            selectedFileName = file.name;
-            analyzeInvoice();
-          });
         }
+
+        setState(() {
+          analyzeInvoice(fileInlineData);
+        });
       }
     } catch (e) {
-      showError('Error picking file: $e');
+      showError('Error picking files: $e');
     }
   }
+
 
   Future<Uint8List?> convertPdfToImage(PlatformFile file) async {
     try {
@@ -124,8 +117,8 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     }
   }
 
-  Future<void> analyzeInvoice() async {
-    if (selectedFileBytes == null) {
+  Future<void> analyzeInvoice(List<Map<String, dynamic>> fileInlineData) async {
+    if (fileInlineData.isEmpty) {
       showError('No file selected.');
       return;
     }
@@ -139,7 +132,6 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     try {
       final apiKey =
           "AIzaSyCgsPmiy-AMhwfNzc085k7GQcuqIR8dzTE"; // Replace with a secure method to retrieve the API key
-      final base64Data = base64Encode(selectedFileBytes!);
 
       final url =
           "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey";
@@ -150,11 +142,10 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                    "You are an expert invoice analyst; Extract and summarize invoice details into a JSON format with fields: productName, productType (categorized as electronics, fashion, grocery, or others), purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate and productDescription ( 3 or 4 words describing the product amd should be different from productName with proper formatting and is mandatory), ensuring only one product is included, excluding absent fields, and always calculate and include warrantyEndDate when warrantyStartDate is present, assuming a 1-year warranty if unspecified, and all dates in format of DD-MM-YYYY"
+                    "You are an expert invoice analyst; Extract and summarize invoice details into a JSON format with fields: productId ( invoice number/policy number), productName, productType (categorized as electronics, fashion, grocery, or others), purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate and productDescription ( 3 or 4 words describing the product amd should be different from productName with proper formatting and is mandatory), provide details for all legitimate products except for items like (handling,shipping,promise fees), excluding absent fields, and always calculate and include warrantyEndDate when warrantyStartDate is present, assuming a 1-year warranty if unspecified, and all dates mandatory are required to be in format of DD-MM-YYYY"
               },
-              {
-                "inline_data": {"mime_type": "image/jpeg", "data": base64Data}
-              }
+              // Use the dynamically passed fileInlineData
+              ...fileInlineData
             ]
           }
         ]
@@ -172,14 +163,17 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
         final extractedText =
             response.data['candidates']?[0]['content']?['parts']?[0]['text'];
         if (extractedText != null) {
-          final jsonStart = extractedText.indexOf('{');
-          final jsonEnd = extractedText.lastIndexOf('}');
+          final jsonStart = extractedText.indexOf('[');
+          final jsonEnd = extractedText.lastIndexOf(']');
           if (jsonStart != -1 && jsonEnd != -1) {
             final jsonString = extractedText.substring(jsonStart, jsonEnd + 1);
             setState(() {
-              extractedData = jsonDecode(jsonString);
-              objectNewData = extractedData!.map((key, value) => MapEntry(key, value.toString()));
-              triggerDetailsScreen(objectNewData!, objectNewData!["productName"]!,widget.productBox,true);
+              extractedDataList = List<Map<String, dynamic>>.from(jsonDecode(jsonString));
+              // Example: If you want to process the first item in the array
+              for(final proObject in extractedDataList!) {
+                objectNewData = proObject.map((key, value) => MapEntry(key, value.toString()));
+                triggerDetailsScreen(objectNewData!, objectNewData!["productName"]!, widget.productBox, true);
+              };
             });
           } else {
             throw Exception('No valid JSON found in response text.');
@@ -239,7 +233,7 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
         .replaceAll('_', ' ');
   }
 
-  void confirmDelete(String productName) {
+  void confirmDelete(String productName, String productId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -256,7 +250,7 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
             TextButton(
               child: Text("Delete"),
               onPressed: () async {
-                await widget.productBox.delete(productName); // Delete the product
+                await widget.productBox.delete(productId); // Delete the product
                 setState(() {}); // Refresh the UI
                 Navigator.of(context).pop();
               },
@@ -285,7 +279,7 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
                   child: ListTile(
                     leading: getIcon((entry.value as Product).productType!),
                     title: Text(
-                      entry.key,
+                      (entry.value as Product).productName!,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -317,7 +311,7 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
                           onPressed: () {
                             triggerDetailsScreen(
                               (entry.value as Product).toMap(),
-                              entry.key,
+                              (entry.value as Product).productName!,
                               widget.productBox,
                               true,
                             );
@@ -329,7 +323,7 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
                         IconButton(
                           icon: Icon(Icons.close, color: Colors.white),
                           onPressed: () {
-                            confirmDelete(entry.key);
+                            confirmDelete((entry.value as Product).productName!,entry.key);
                           },
                           splashRadius: 20,
                           tooltip: "Delete",
@@ -339,7 +333,7 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
                         : SizedBox.shrink(), // Empty space if not hovered
                     onTap: () {
                       triggerDetailsScreen((entry.value as Product).toMap(),
-                          entry.key, widget.productBox, false);
+                          (entry.value as Product).productName!, widget.productBox, false);
                     },
                   ),
                 ),
@@ -422,7 +416,7 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
                     child: Padding(padding: EdgeInsets.all(30.0),
                       child: FloatingActionButton(
                         shape: CircleBorder(),
-                      onPressed: isLoading ? null : pickFile,
+                      onPressed: isLoading ? null : pickFiles,
                       child: Icon(Icons.add),
                     ),
                   ))

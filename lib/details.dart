@@ -23,7 +23,7 @@ class _DetailsState extends State<DetailsWidget> {
   late Map<String, TextEditingController> controllers;
   late TextEditingController productNameController;
   bool isEditable = false;
-  late String currProductName;
+  late String currProductId;
 
   final List<String> productTypeOptions = [
     'electronics',
@@ -36,13 +36,13 @@ class _DetailsState extends State<DetailsWidget> {
   void initState() {
     super.initState();
     isEditable = widget.isEditable;
+    currProductId = widget.details["productId"]!;
     // Initialize TextEditingControllers for each field
     controllers = widget.details.map((key, value) {
       return MapEntry(key, TextEditingController(text: value.toString()));
     });
     // Initialize controller for productName
-    currProductName = widget.productName;
-    productNameController = TextEditingController(text: currProductName);
+    productNameController = TextEditingController(text: widget.productName);
   }
 
   @override
@@ -54,21 +54,17 @@ class _DetailsState extends State<DetailsWidget> {
   }
 
   Future<void> insertOrUpdateProduct(Map<String, String> data, Box<Product> productBox) async {
-    bool isNewEntry = productBox.get(currProductName) ==  null;
+    bool isNewEntry = productBox.get(currProductId) ==  null;
     final product = Product.fromMap(data);
-    if(product.productName!=currProductName) {
-      await productBox.delete(currProductName);
-    }
-    await productBox.put(product.productName, product);
-    currProductName = product.productName;// Use productName as the key
+    await productBox.put(currProductId, product); // Use productName as the key
     if(isNewEntry){
       Navigator.pop(context);
     }
   }
 
-  Future<List<String>> getEmptyFieldsByProductName(
-      String productName, Box<Product> productBox) async {
-    final product = productBox.get(productName);
+  Future<List<String>> getEmptyFieldsByProductId(
+      String productId, Box<Product> productBox) async {
+    final product = productBox.get(productId);
     if (product == null) return [];
 
     return product.toMap().entries
@@ -118,7 +114,9 @@ class _DetailsState extends State<DetailsWidget> {
     const title = 'Bill Buddy';
 
     widget.details.remove("productName");
+    widget.details.remove("productId");
     widget.details.removeWhere((key, value) => value == "");
+    widget.details.removeWhere((key, value) => value == "null");
 
     return MaterialApp(
       title: title,
@@ -150,6 +148,7 @@ class _DetailsState extends State<DetailsWidget> {
                       widget.details[key] = controllers[key]!.text;
                     }
                     widget.details['productName'] = productNameController.text;
+                    widget.details['productId'] = currProductId;
                     insertOrUpdateProduct(widget.details, widget.productBox);
                   }
                 });
@@ -277,7 +276,7 @@ class _DetailsState extends State<DetailsWidget> {
                     shape: CircleBorder(),
                     onPressed: () async {
                       // Fetch the list of empty fields
-                      List<String> emptyFields = await getEmptyFieldsByProductName(currProductName, widget.productBox);
+                      List<String> emptyFields = await getEmptyFieldsByProductId(currProductId, widget.productBox);
 
                       if (emptyFields.isEmpty) {
                         // Show a message if there are no empty fields
@@ -355,7 +354,8 @@ class _DetailsState extends State<DetailsWidget> {
                         });
 
                         // Optionally, save the updated details to the database
-                        widget.details['productName'] = currProductName;
+                        widget.details['productName'] = productNameController.text;
+                        widget.details['productId'] = currProductId;
                         await insertOrUpdateProduct(widget.details, widget.productBox);
 
                         ScaffoldMessenger.of(context).showSnackBar(

@@ -433,7 +433,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     return WillPopScope(
       onWillPop: _onWillPop, // Set the callback for system back button
       child: Scaffold(
-        extendBodyBehindAppBar: true,
+        extendBodyBehindAppBar: false,
         appBar: AppBar(
           title: Text(
             'BILL Buddy',
@@ -457,15 +457,13 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
               ),
             ]
         ),
-        body: Padding(
-          padding: const EdgeInsets.only(top: 46.0),
-          child: Stack(
+        body: Stack(
             alignment: Alignment(0, 0),
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(height: 30),
+                  SizedBox(height: 8.0),
                   Expanded(
                     child: SingleChildScrollView(
                       child: buildNestedList(objectData),
@@ -491,7 +489,6 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
               ),
             ],
           ),
-        ),
         floatingActionButton: FloatingActionButton(
           shape: CircleBorder(),
           onPressed: isLoading ? null : pickFiles,

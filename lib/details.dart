@@ -184,7 +184,7 @@ class _DetailsState extends State<DetailsWidget> {
                     elevation: 4,
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.all(4.0),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,

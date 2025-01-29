@@ -8,7 +8,7 @@ plugins {
 ext {
     majorVersion = 1
     minorVersion = 0
-    buildVersion = 3
+    buildVersion = 5
 }
 
 // Increment build version on every release or commit

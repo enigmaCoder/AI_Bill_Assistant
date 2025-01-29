@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:ai_bill_assistant/product.dart';
@@ -302,75 +303,94 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
 
           return StatefulBuilder(
             builder: (context, setState) {
-              return MouseRegion(
-                onEnter: (_) => setState(() => isHovered = true),
-                onExit: (_) => setState(() => isHovered = false),
-                child: Padding(
-                  padding: EdgeInsets.all(1.0),
-                  child: ListTile(
-                    leading: getIcon((entry.value as Product).productType!),
-                    title: Text(
-                      (entry.value as Product).productName!,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+              Timer? hideTimer; // Timer to auto-hide options
+
+              void showOptions() {
+                setState(() => isHovered = true);
+
+                // Auto-hide options after 3 seconds (optional)
+                hideTimer?.cancel();
+                hideTimer = Timer(Duration(milliseconds: 1500), () {
+                  setState(() => isHovered = false);
+                });
+              }
+
+              void hideOptions() {
+                hideTimer?.cancel();
+                setState(() => isHovered = false);
+              }
+
+              return GestureDetector(
+                onLongPress: () => showOptions(), // Show options on long press (mobile)
+                onTap: () => hideOptions(), // Hide options when tapping anywhere else
+                child: MouseRegion(
+                  onEnter: (_) => setState(() => isHovered = true), // Show options on hover (desktop)
+                  onExit: (_) => setState(() => isHovered = false), // Hide on hover out (desktop)
+                  child: Padding(
+                    padding: EdgeInsets.all(1.0),
+                    child: ListTile(
+                      leading: getIcon((entry.value as Product).productType!),
+                      title: Text(
+                        (entry.value as Product).productName!,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      textAlign: TextAlign.left,
-                      overflow: TextOverflow.ellipsis,
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text((entry.value as Product).productDescription ?? ""),
+                          Row(
+                            children: [
+                              Text('Warranty: Active', style: TextStyle(color: Colors.green)),
+                              Icon(Icons.check_circle, color: Colors.green, size: 16),
+                            ],
+                          ),
+                        ],
+                      ),
+                      trailing: isHovered
+                          ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit_note, color: Colors.white),
+                            onPressed: () {
+                              triggerDetailsScreen(context,
+                                (entry.value as Product).toMap(),
+                                (entry.value as Product).productName!,
+                                widget.productBox,
+                                true,
+                              );
+                            },
+                            splashRadius: 20,
+                            tooltip: "View Details",
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close, color: Colors.white),
+                            onPressed: () {
+                              confirmDelete((entry.value as Product).productName!, entry.key);
+                            },
+                            splashRadius: 20,
+                            tooltip: "Delete",
+                          ),
+                        ],
+                      )
+                          : SizedBox.shrink(), // Empty if not hovered/long-pressed
+                      onTap: () {
+                        triggerDetailsScreen(
+                          context,
+                          (entry.value as Product).toMap(),
+                          (entry.value as Product).productName!,
+                          widget.productBox,
+                          false,
+                        );
+                      },
                     ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text((entry.value as Product).productDescription ?? ""),
-                        Row(
-                          children: [
-                            Text('Warranty: Active',
-                                style: TextStyle(color: Colors.green)),
-                            Icon(Icons.check_circle,
-                                color: Colors.green, size: 16),
-                          ],
-                        ),
-                      ],
-                    ),
-                    trailing: isHovered
-                        ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Details icon
-                        IconButton(
-                          icon: Icon(Icons.edit_note, color: Colors.white),
-                          onPressed: () {
-                            triggerDetailsScreen(context,
-                              (entry.value as Product).toMap(),
-                              (entry.value as Product).productName!,
-                              widget.productBox,
-                              true,
-                            );
-                          },
-                          splashRadius: 20,
-                          tooltip: "View Details",
-                        ),
-                        // Delete icon
-                        IconButton(
-                          icon: Icon(Icons.close, color: Colors.white),
-                          onPressed: () {
-                            confirmDelete((entry.value as Product).productName!,entry.key);
-                          },
-                          splashRadius: 20,
-                          tooltip: "Delete",
-                        ),
-                      ],
-                    )
-                        : SizedBox.shrink(), // Empty space if not hovered
-                    onTap: () {
-                      triggerDetailsScreen(context,(entry.value as Product).toMap(),
-                          (entry.value as Product).productName!, widget.productBox, false);
-                    },
                   ),
                 ),
               );
             },
           );
+
         }).toList(),
       );
     } else if (data is List) {

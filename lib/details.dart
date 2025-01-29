@@ -1,4 +1,5 @@
 import 'package:ai_bill_assistant/product.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart'; // Add intl package for date formatting
@@ -134,7 +135,7 @@ class _DetailsState extends State<DetailsWidget> {
           actions: [
             Padding(padding: EdgeInsets.only(right: 8.0),
             child: IconButton(
-              icon: isEditable ? Icon(Icons.check_circle, color: Colors.green, size: 30) : Icon(Icons.edit_note, color: Colors.white, size: 30),
+              icon: isEditable ? Icon(CupertinoIcons.check_mark_circled_solid, color: Colors.green, size: 30) : Icon(Icons.edit_note, color: Colors.white, size: 30),
               onPressed: () {
                 if(widget.productBox.get(currProductId) !=null){
                  setState(() {
@@ -264,8 +265,8 @@ class _DetailsState extends State<DetailsWidget> {
               ),
             ),
             isEditable? SizedBox() : Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(padding: EdgeInsets.all(30.0),
+                alignment: Alignment.center,
+                child: Padding(padding: EdgeInsets.all(40.0),
                   child: FloatingActionButton(
                     shape: CircleBorder(),
                     onPressed: () async {

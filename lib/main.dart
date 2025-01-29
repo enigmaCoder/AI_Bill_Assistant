@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:ai_bill_assistant/product.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
@@ -219,22 +221,24 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
           isEditable: isEditable,
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // Zoom-In for entry animation
+          // Entry animation (zoom-in and fade-in)
           var entryScaleTween = Tween<double>(begin: 0.8, end: 1.0).animate(animation);
           var entryFadeTween = Tween<double>(begin: 0.0, end: 1.0).animate(animation);
 
-          // Zoom-Out for exit animation
+          // Exit animation (zoom-out and fade-out)
           var exitScaleTween = Tween<double>(begin: 1.0, end: 0.8).animate(secondaryAnimation);
           var exitFadeTween = Tween<double>(begin: 1.0, end: 0.0).animate(secondaryAnimation);
 
-          return FadeTransition(
-            opacity: animation.drive(Tween(begin: 0.0, end: 1.0)), // Always fade in
-            child: ScaleTransition(
-              scale: animation.status == AnimationStatus.reverse ? exitScaleTween : entryScaleTween,
-              child: FadeTransition(
-                opacity: animation.status == AnimationStatus.reverse ? exitFadeTween : entryFadeTween,
-                child: child,
-              ),
+          // Apply both zoom-out and fade-out when popping (exit)
+          return ScaleTransition(
+            scale: secondaryAnimation.status == AnimationStatus.reverse
+                ? exitScaleTween
+                : entryScaleTween,
+            child: FadeTransition(
+              opacity: secondaryAnimation.status == AnimationStatus.reverse
+                  ? exitFadeTween
+                  : entryFadeTween,
+              child: child,
             ),
           );
         },
@@ -245,6 +249,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
       }
     });
   }
+
 
 
 
@@ -420,61 +425,106 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
   Future<bool> _onWillPop() async {
     setState(() {});
     return true;
-  }
+  }// For BackdropFilter and ImageFilter
 
   @override
   Widget build(BuildContext context) {
-    objectData = widget.productBox.toMap().cast<String,Product>();
+    objectData = widget.productBox.toMap().cast<String, Product>();
     return WillPopScope(
-        onWillPop: _onWillPop,  // Set the callback for system back button
-        child: Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'BILL Buddy',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ), // Background color
-        centerTitle: true, // Center the title
-        elevation: 4, // Shadow effect
-        leading: Icon(Icons.menu),
-      ),
-      body: Padding(
+      onWillPop: _onWillPop, // Set the callback for system back button
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(
+            'BILL Buddy',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          elevation: 4,
+          leading: IconButton(
+              icon: Icon(Icons.menu),
+              onPressed: () {
+              // Handle menu button press
+              print("Menu button pressed");
+          }),
+            actions: [
+              IconButton(
+                icon: Icon(CupertinoIcons.search),
+                onPressed: () {
+                  // Handle notification button press
+                  print("Notifications button pressed");
+                },
+              ),
+            ]
+        ),
+        body: Padding(
           padding: const EdgeInsets.only(top: 46.0),
           child: Stack(
             alignment: Alignment(0, 0),
             children: [
-              Stack(
-                children: [
-                  Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [Opacity(opacity: 1)]),
-                  isLoading
-                      ? CircularProgressIndicator(color: Colors.purpleAccent.shade100)
-                      : SizedBox(),
-                ],
-              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(height: 30),
                   Expanded(
                     child: SingleChildScrollView(
-                            child: buildNestedList(objectData),
-                          ),
-                  ),
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Padding(padding: EdgeInsets.all(30.0),
-                      child: FloatingActionButton(
-                        shape: CircleBorder(),
-                      onPressed: isLoading ? null : pickFiles,
-                      child: Icon(Icons.add),
+                      child: buildNestedList(objectData),
                     ),
-                  ))
+                  ),
                 ],
-              )
+              ),
+              Stack(
+                children: [
+                  if (isLoading)
+                  // Added translucent purple blurred background
+                    BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
+                      child: Container(
+                        height: double.infinity,
+                        width: double.infinity,
+                        color: Colors.black.withOpacity(0.2), // Purple tinted background
+                        child: Center(
+                            child: CircularProgressIndicator(color: Colors.purpleAccent.shade100)),
+                      ),
+                    ),
+                ],
+              ),
             ],
-          )),
-    ));
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          shape: CircleBorder(),
+          onPressed: isLoading ? null : pickFiles,
+          child: Icon(Icons.add),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: BottomAppBar(
+          shape: CircularNotchedRectangle(),
+          notchMargin: 8.0,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                iconSize: 25,
+                icon: Icon(CupertinoIcons.house_fill),
+                onPressed: () {
+                  // Handle Home button press
+                },
+              ),
+              SizedBox(width: 100), // Space for the floating action button
+              IconButton(
+                iconSize: 25,
+                icon: Icon(CupertinoIcons.collections),
+                onPressed: () {
+                  // Handle Settings button press
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
+
 }

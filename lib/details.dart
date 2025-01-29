@@ -54,12 +54,8 @@ class _DetailsState extends State<DetailsWidget> {
   }
 
   Future<void> insertOrUpdateProduct(Map<String, String> data, Box<Product> productBox) async {
-    bool isNewEntry = productBox.get(currProductId) ==  null;
     final product = Product.fromMap(data);
     await productBox.put(currProductId, product); // Use productName as the key
-    if(isNewEntry){
-      Navigator.pop(context);
-    }
   }
 
   Future<List<String>> getEmptyFieldsByProductId(
@@ -140,18 +136,16 @@ class _DetailsState extends State<DetailsWidget> {
             child: IconButton(
               icon: isEditable ? Icon(Icons.check_circle, color: Colors.green, size: 30) : Icon(Icons.edit_note, color: Colors.white, size: 30),
               onPressed: () {
-                setState(() {
+                if(widget.productBox.get(currProductId) !=null){
+                 setState(() {
                   isEditable = !isEditable;
                   if (!isEditable) {
-                    // Save changes if confirmed
-                    for (var key in widget.details.keys) {
-                      widget.details[key] = controllers[key]!.text;
-                    }
-                    widget.details['productName'] = productNameController.text;
-                    widget.details['productId'] = currProductId;
-                    insertOrUpdateProduct(widget.details, widget.productBox);
-                  }
-                });
+                    saveData();
+                  }});
+                }else {
+                  Navigator.pop(context);
+                  saveData();
+                };
               },
             )),
           ],
@@ -370,5 +364,14 @@ class _DetailsState extends State<DetailsWidget> {
         ),
       ),
     );
+  }
+
+  void saveData() {
+    for (var key in widget.details.keys) {
+      widget.details[key] = controllers[key]!.text;
+    }
+    widget.details['productName'] = productNameController.text;
+    widget.details['productId'] = currProductId;
+    insertOrUpdateProduct(widget.details, widget.productBox);
   }
 }

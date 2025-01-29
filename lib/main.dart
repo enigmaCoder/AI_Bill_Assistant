@@ -142,7 +142,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
             "parts": [
               {
                 "text":
-                    "You are an expert invoice analyst; Extract and summarize invoice details into a JSON format with fields: productId ( invoice number/policy number), productName, productType (categorized as electronics, fashion, grocery, or others), purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate and productDescription ( 3 or 4 words describing the product amd should be different from productName with proper formatting and is mandatory), provide details for all legitimate products except for items like (handling,shipping,promise fees), excluding absent fields, and always calculate and include warrantyEndDate when warrantyStartDate is present, assuming a 1-year warranty if unspecified, and all dates mandatory are required to be in format of DD-MM-YYYY"
+                    "You are an expert invoice analyst; Extract and summarize invoice details into a JSON format with fields: productId ( Invoice ID/policy number ), productName, productType (categorized as electronics, fashion, grocery, or others), purchaseDate, price, insuranceDate, insuranceExpiryDate, warrantyStartDate, warrantyEndDate and productDescription (This is a required field and should be of 3 or 4 words describing the product amd should be different from productName with proper formatting), provide details for all legitimate products and never ever including any Products which have Fees in their names, excluding absent fields, and always calculate and include warrantyEndDate when warrantyStartDate is present, assuming a 1-year warranty if unspecified, and all dates mandatory are required to be in format of DD-MM-YYYY"
               },
               // Use the dynamically passed fileInlineData
               ...fileInlineData
@@ -172,7 +172,7 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
               // Example: If you want to process the first item in the array
               for(final proObject in extractedDataList!) {
                 objectNewData = proObject.map((key, value) => MapEntry(key, value.toString()));
-                triggerDetailsScreen(objectNewData!, objectNewData!["productName"]!, widget.productBox, true);
+                triggerDetailsScreen(context, objectNewData!, objectNewData!["productName"]!, widget.productBox, true);
               };
             });
           } else {
@@ -206,17 +206,48 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
     }
   }
 
+  void triggerDetailsScreen(BuildContext context, Map<String, String> productDetails,
+      String productName, Box<Product> productBox, bool isEditable) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => DetailsWidget(
+          details: productDetails,
+          productName: productName,
+          productBox: productBox,
+          isEditable: isEditable,
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Zoom-In for entry animation
+          var entryScaleTween = Tween<double>(begin: 0.8, end: 1.0).animate(animation);
+          var entryFadeTween = Tween<double>(begin: 0.0, end: 1.0).animate(animation);
 
-void triggerDetailsScreen(Map<String,String> productDetails, String productName, Box<Product> productBox, bool isEditable){
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-        builder: (context) =>
-        DetailsWidget(details: productDetails,productName: productName,productBox: productBox,isEditable: isEditable)),
-  ).then((result){
-      setState(() {});
-  });
-}
+          // Zoom-Out for exit animation
+          var exitScaleTween = Tween<double>(begin: 1.0, end: 0.8).animate(secondaryAnimation);
+          var exitFadeTween = Tween<double>(begin: 1.0, end: 0.0).animate(secondaryAnimation);
+
+          return FadeTransition(
+            opacity: animation.drive(Tween(begin: 0.0, end: 1.0)), // Always fade in
+            child: ScaleTransition(
+              scale: animation.status == AnimationStatus.reverse ? exitScaleTween : entryScaleTween,
+              child: FadeTransition(
+                opacity: animation.status == AnimationStatus.reverse ? exitFadeTween : entryFadeTween,
+                child: child,
+              ),
+            ),
+          );
+        },
+      ),
+    ).then((result) {
+      if (context.mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+
+
+
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -309,7 +340,7 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
                         IconButton(
                           icon: Icon(Icons.edit_note, color: Colors.white),
                           onPressed: () {
-                            triggerDetailsScreen(
+                            triggerDetailsScreen(context,
                               (entry.value as Product).toMap(),
                               (entry.value as Product).productName!,
                               widget.productBox,
@@ -332,7 +363,7 @@ void triggerDetailsScreen(Map<String,String> productDetails, String productName,
                     )
                         : SizedBox.shrink(), // Empty space if not hovered
                     onTap: () {
-                      triggerDetailsScreen((entry.value as Product).toMap(),
+                      triggerDetailsScreen(context,(entry.value as Product).toMap(),
                           (entry.value as Product).productName!, widget.productBox, false);
                     },
                   ),

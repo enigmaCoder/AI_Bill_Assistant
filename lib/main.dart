@@ -11,6 +11,7 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:pdfx/pdfx.dart';
 import 'details.dart';
+import 'new.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -451,8 +452,10 @@ class _InvoiceAnalyzerState extends State<InvoiceAnalyzer> {
               IconButton(
                 icon: Icon(CupertinoIcons.search),
                 onPressed: () {
-                  // Handle notification button press
-                  print("Notifications button pressed");
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ItemCardList()),
+                  );
                 },
               ),
             ]
